@@ -1,0 +1,10 @@
+Notes for printing the structures that comprise MaryLou.
+
+1. 2.5mm holes printed with shells 2 layers thick on low detail setting
+are threadable with #4-40 machine screws.
+
+2. 4mm holes easily pass #4 screws.
+
+3. 6.5mm thickness on the platform with 15% infill is rigid enough
+to not flex under the initial test conditions.
+
