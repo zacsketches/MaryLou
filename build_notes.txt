@@ -1,3 +1,5 @@
 1. Start here on Due and motor shield
      http://arduino.cc/en/Tutorial/DueMotorShieldDC
 
+2. Great ref for quadrature encoding
+    http://letsmakerobots.com/node/24031
