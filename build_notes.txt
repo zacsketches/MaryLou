@@ -1,3 +1,18 @@
+Bill of Materials:
+     Glow Worm robotics framework
+     Arduino Due
+     Arduino Motor Shield
+     Pololu 10 DOF IMU v2
+     XBEE
+     3-cell lipo battery
+     2 x Pololu 37D mm 19:1 gearmotor
+     2 x Pololu stamped Al L-Bracket for 37D mm gearmotors
+     2 x Pololu universal mounting hubs
+     2 x Pololu ?? x 8mm wheels
+     4 x 3/4" nylon standoffs
+     custom power and signal distribution board
+     
+
 1. Start here on Due and motor shield
      http://arduino.cc/en/Tutorial/DueMotorShieldDC
 
