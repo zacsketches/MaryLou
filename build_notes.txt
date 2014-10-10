@@ -3,3 +3,37 @@
 
 2. Great ref for quadrature encoding
     http://letsmakerobots.com/node/24031
+
+3. The plant will need to attach two encoder motors and
+subscribe to the control_effort message.  It will
+publish a plant status message with the following fields
+    long rt_ct
+    float rt_I //mv
+    long lt_ct
+    float lt_I
+    uint32_t timestamp   //microseconds
+    
+5. Consider having the plant balance counts between the
+two motors.
+    
+4. The attitude computer will have an IMU object 
+attached to it and will need to publish a message
+called attitude with the following data:
+    int phi    //pitch neg falling back, pos frwd
+    uint32_t timestamp   //microseconds
+    
+5. The state observer will subscribe to the 
+attitude message and the plant_status_msg and publish
+the state_vec_msg with the following fields
+    int theta
+    int theta_dot
+    int x
+    int x_dot
+    
+6. The balance regulator will subscribe to the 
+state_vec_msg and publish the control_effort_msg
+with the following field:
+    int u
+    
+7. Have clearinghouse use publish_serial on the
+messages of interest for debugging.
