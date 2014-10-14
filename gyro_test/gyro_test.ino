@@ -34,7 +34,7 @@ L3G gyro;
 typedef unsigned long Time;
 
 const int sample_num  = 500;     //scalar
-const int sample_time = 10       //ms...try to run at 100hz
+const int sample_time = 10;      //ms...try to run at 100hz
 int       dc_offset   = 0;       //usits
 int       noise       = 0;       //units
 int       rate        = 0;       //units per sec
