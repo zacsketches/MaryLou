@@ -22,7 +22,7 @@
    At sensitivity of  ------- the scaler to convert to deg/sec (datasheet pg9) 
                        1 sec                                               
       8.750 mdeg/sec      1 deg/sec         Reading unit
-   is -------------  X ---------------  X ---------------                 
+   is -------------  X ---------------  X ---------------             
           1 unit        1000 mdeg/sec
 */
 
@@ -33,14 +33,15 @@ L3G gyro;
 
 typedef unsigned long Time;
 
-const int sample_num  = 500;     //scalar
-const int sample_time = 10;      //ms...try to run at 100hz
-int       dc_offset   = 0;       //usits
-int       noise       = 0;       //units
-int       rate        = 0;       //units per sec
-int       prev_rate   = 0;
-double    angle       = 0.0;       //units
-Time      now         = 0; 
+const double sensitivity = 8.75;    //datasheet page 9.  mdeg/sec
+const int    sample_num  = 1000;     //scalar
+const int    sample_time = 15;      //ms...try to run at 100hz
+int          dc_offset   = 0;       //usits
+int          noise       = 0;       //units
+int          rate        = 0;       //units per sec
+int          prev_rate   = 0;
+double       angle       = 0.0;     //units
+Time         now         = 0; 
 
 void setup() {
     Serial.begin(115200);
@@ -51,9 +52,11 @@ void setup() {
     //may need to add specifics to .init fuction...test with default first.
     //see L3G.h for alt definitions
     while(!gyro.init());
+    Serial.println("Gyro initialized");
     
     gyro.enableDefault();
 
+    Serial.println("Computing bias and noise bandwidth");
     //Measure DC Offset (datasheet refers to Zero-rate-level)
     for(int i = 0; i < sample_num; ++i) {
         gyro.read();
@@ -106,6 +109,16 @@ void print_config() {
 
 void print_data() {
     char buf[75];
-    sprintf(buf, "rate:%d\tangle%d", rate, angle);
-    Serial.println(buf);
+    sprintf(buf, "rate: %+05d\tangle: ", rate);
+    Serial.print(buf);
+    Serial.print(angle);
+    Serial.print("\tangle in deg: ");
+    Serial.println(conv_angle_to_deg(angle));
+}
+
+double conv_angle_to_deg(double a) {
+  double res;
+  res = a * sensitivity;
+  res /= 100;
+  return res;
 }
