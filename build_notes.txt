@@ -52,3 +52,16 @@ with the following field:
     
 7. Have clearinghouse use publish_serial on the
 messages of interest for debugging.
+
+8. //Physical connections
+const int lt_dir_pin = 12;
+const int lt_pwm_pin = 3;
+const int lt_sense_pin = A0;
+const int lt_encoder_A_pin = 7;
+const int lt_encoder_B_pin = 6;
+
+const int rt_dir_pin = 13;
+const int rt_pwm_pin = 11;
+const int rt_sense_pin = A1;
+const int rt_encoder_A_pin = 5;
+const int rt_encoder_B_pin = 4;
