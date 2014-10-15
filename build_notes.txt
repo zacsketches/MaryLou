@@ -65,3 +65,6 @@ const int rt_pwm_pin = 11;
 const int rt_sense_pin = A1;
 const int rt_encoder_A_pin = 5;
 const int rt_encoder_B_pin = 4;
+
+9. Outstanding resource for IMU info:
+     https://code.google.com/p/ardu-imu/wiki/Theory
