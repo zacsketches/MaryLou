@@ -43,107 +43,146 @@
 #include <LSM303.h>
 #include <Wire.h>
 
-LSM303 accel;
+#define rad_to_deg 57.2958  		//180 / pi
+#define deg_to_rad .0174533 		//pi / 180
 
 typedef unsigned long Time;
+typedef LSM303::vector<float> vector;
+
+LSM303 accel;
+
 
 const double sensitivity = 1.0;     //mG / LSB, datasheet page 9
 const int    sample_num  = 1000;     //scalar
 const int    sample_time = 20;      //ms...try to run at 50hz
-long         gravity_vec_x = 0;       //units
-long         gravity_vec_y = 0;       //units
-long         gravity_vec_z = 0;       //units
-int               x_bias = 0;
-int               y_bias = 0;
-int               z_bias = 0;
-long         bias        = 0;
-int          noise       = 0;       //units
+vector             raw_g;
+vector              bias;
+vector            comp_g;
+double                angle = 0.0;
 Time         now         = 0; 
 
 void setup() {
-    Serial.begin(115200);
-    Serial.println();
+	Serial.begin(115200);
+	Serial.println();
     
-    Wire.begin();
+	Wire.begin();
     
-    //may need to add specifics to .init fuction...test with default first.
-    //see L3G.h for alt definitions
-    while(!accel.init());
-    Serial.println("Accel initialized");
+	//may need to add specifics to .init fuction...test with default first.
+	//see L3G.h for alt definitions
+	while(!accel.init());
+	Serial.println("Accel initialized");
     
-    accel.enableDefault();
+	accel.enableDefault();
 
-    Serial.println("Computing bias and noise bandwidth");
-    //Measure DC Offset (datasheet refers to Zero-rate-level)
-    for(int i = 0; i < sample_num; ++i) {
-        accel.read();
-        gravity_vec_x += (int)accel.A.x;
-        gravity_vec_y += (int)accel.A.y;
-        gravity_vec_z += (int)accel.A.z;
-    }
-    gravity_vec_x /= sample_num;
-    gravity_vec_y /= sample_num;
-    gravity_vec_z /= sample_num;
+	//Measure DC Offset and/or mounting position errors
+	Serial.println("Computing bias");
+	for(int i = 0; i < sample_num; ++i) {
+		accel.read();
+		raw_g.x += (int)accel.A.x;
+		raw_g.y += (int)accel.A.y;
+		raw_g.z += (int)accel.A.z;
+	}
+	raw_g.x /= sample_num;
+	raw_g.y /= sample_num;
+	raw_g.z /= sample_num;
     
-	gravity_vec_x = gravity_vec_x >> 4;
-	gravity_vec_y = gravity_vec_y >> 4;
-	gravity_vec_z = gravity_vec_z >> 4;
+	raw_g.x = (long)raw_g.x >> 4;
+	raw_g.y = (long)raw_g.y >> 4;
+	raw_g.z = (long)raw_g.z >> 4;
+	
+	LSM303::vector_normalize(&raw_g);
+	// vector_scale(raw_g, 1000);
 
-	x_bias = -gravity_vec_x;
-	y_bias = -gravity_vec_y;
-	z_bias = 1000-gravity_vec_z;
-        
-    //Display setup info
-    print_config();
-    delay(5000);
+	bias.x = -raw_g.x;
+	bias.y = -raw_g.y;
+	bias.z = 1.0-raw_g.z;
+	
+	vector_add(&raw_g, &bias, &comp_g);
+    
+	//Display setup info
+	print_config();
+	delay(5000);
 }
 
 void loop() {
     //measure gravity and pitch angle.
    if (millis() - now > sample_time) {
        now = millis();
-	   accel.read();
+   	   accel.read();
+	   accel.shift_accel();
+	   vector temp;
+	   temp.x = accel.A.x;
+	   temp.y = accel.A.y;
+	   temp.z = accel.A.z;
+	   LSM303::vector_normalize(&temp);
+
+	   // Serial.print("normalized temp: ");
+	   // vector_print(temp);
 	   
-	   //A dot Z is equal to mag(A) * 1 * cos(theta)
-	   //if you normalize A this reduces to:
+	   // vector_scale(temp, 1000);
+
+	   // Serial.print("scaled temp: ");
+	   // vector_print(temp);
+	   
+	   // accel.A.x = (int)round(temp.x);
+	   // accel.A.y = (int)round(temp.y);
+	   // accel.A.z = (int)round(temp.z);
+	   
+	   // Serial.print("rounded A: ");
+	   // vector_print(accel.A);
+	   
+	   vector_add(&temp, &bias);
+	   
+
+	   
+	   // Serial.print("compensated A: ");
+	   // vector_print(accel.A);
+	   
+	   	    
+	   // A dot Z axis is equal to mag(A) * 1 * cos(theta)
+	   // if you normalize A this reduces to:
 	   //	1 * 1 * cos(theta)
-	   
-//        gyro.read();
-//        rate = ( (int)gyro.G.y-dc_offset);
-//        
-//    /*
-//        TODO I could measure the actual time_step for a better integration
-//        ...or I could take measurement on a timer interrupt
-//    */
-//        int mean_rate = (prev_rate + rate) /2;
-//        double conv_sample_time = (double)sample_time / 1000; //convert to sec
-//        angle += (double)mean_rate * conv_sample_time;
-//  
-//        prev_rate = rate;
-//    }
-//
-//    print_data();
+	   vector z_axis;
+	   z_axis.x = 0.0;
+	   z_axis.y = 0.0;
+	   z_axis.z = 1.0;
+   
+	   double cos_theta = vector_dot(&temp, &z_axis);
+	   if(cos_theta > 1) {
+		   //this extra normalization prevents dot product values that
+		   //exceed 1.0 and crash the acos function.
+		   LSM303::vector_normalize(&temp);
+		   cos_theta = vector_dot(&temp, &z_axis);
+	   }
+//	   Serial.println(cos_theta, 6);
+	   angle = acos(cos_theta);
+	   //Serial.println(angle);
+	   angle *= rad_to_deg;
+
+	   print_angle();
+	   // print_accel_vec();
+   }
 }
 
 void print_config() {
-	Serial.print("Gravity vector:\n");
-	Serial.println(gravity_vec_x);
-	Serial.println(gravity_vec_y);
-	Serial.println(gravity_vec_z);
+	Serial.print("Raw gravity vector:\n");
+	vector_print(raw_g);
 	
 	Serial.print("Bias vector:\n");
-	Serial.println(x_bias);
-	Serial.println(y_bias);
-	Serial.println(z_bias);	
+	vector_print(bias);
+
+	Serial.print("Compensated gravity vector:\n");
+	vector_print(comp_g);
 }     
 
-void print_data() {
-//    char buf[75];
-//    sprintf(buf, "rate: %+05d\tangle: ", rate);
-//    Serial.print(buf);
-//    Serial.print(angle);
-//    Serial.print("\tangle in deg: ");
-//    Serial.println(conv_angle_to_deg(angle));
+void print_angle() {
+	Serial.print("Angle is: ");
+	Serial.println(angle);
+}
+
+void print_accel_vec() {
+	Serial.print("Compensated Accel vector: ");
+	vector_print(accel.A);		
 }
 
 double conv_unit_to_g(long g) {
