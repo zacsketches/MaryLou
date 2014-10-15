@@ -35,8 +35,8 @@ typedef unsigned long Time;
 
 const double sensitivity = 8.75;    //datasheet page 9.  mdeg/sec
 const int    sample_num  = 1000;     //scalar
-const int    sample_time = 15;      //ms...try to run at 100hz
-int          dc_offset   = 0;       //usits
+const int    sample_time = 15;      //ms
+long         dc_offset   = 0;       //units
 int          noise       = 0;       //units
 int          rate        = 0;       //units per sec
 int          prev_rate   = 0;
@@ -68,9 +68,9 @@ void setup() {
     for(int i = 0; i < sample_num; ++i) {
         gyro.read();
         if( (int)gyro.G.y-dc_offset > noise)
-            noise = (int)gyro.G.y - dc_offset;
+            noise = ((int)gyro.G.y - dc_offset);
         else if( (int)gyro.G.y-dc_offset < -noise)
-            noise = -(int)gyro.G.y - dc_offset;
+            noise = -((int)gyro.G.y - dc_offset);
     }
         
     //Display setup info
@@ -84,15 +84,24 @@ void loop() {
     if (millis() - now > sample_time) {
         now = millis();
         gyro.read();
-        rate = ( (int)gyro.G.y-dc_offset);
+        rate = (int)(gyro.G.y-dc_offset);
         
-    /*
-        TODO I could measure the actual time_step for a better integration
-        ...or I could take measurement on a timer interrupt
-    */
+		/*
+		TODO I could measure the actual time_step for a better integration
+		...or I could take measurement on a timer interrupt
+		*/
+		/*
+		TODO the line below is where I make my mark.  
+		From page 15 of the DCM paper, instead of using
+		raw mean_rate in the trapezoidal integration I would 
+		be better off making Omega = measured + correction.  The
+		correction value can come from my PI controller with an
+		accel input like this:
+			int adjusted_rate = mean_rate + drift_correction;
+		*/
         int mean_rate = (prev_rate + rate) /2;
-        double conv_sample_time = (double)sample_time / 1000; //convert to sec
-        angle += (double)mean_rate * conv_sample_time;
+        double sample_time_in_sec = (double)sample_time / 1000; //convert to sec
+        angle += (double)mean_rate * sample_time_in_sec;
   
         prev_rate = rate;
     }
@@ -102,9 +111,9 @@ void loop() {
 
 void print_config() {
     char buf[75];
-    sprintf(buf, "DC Offset:%d\tNoise:%d\tvals in sensor units",
-        dc_offset, noise);
-    Serial.println(buf);
+    sprintf(buf, "DC Offset:%d\tNoise: ", dc_offset);
+    Serial.print(buf);
+	Serial.println(noise);
 }     
 
 void print_data() {
@@ -113,12 +122,12 @@ void print_data() {
     Serial.print(buf);
     Serial.print(angle);
     Serial.print("\tangle in deg: ");
-    Serial.println(conv_angle_to_deg(angle));
+    Serial.println(conv_angle_to_deg(angle),3);
 }
 
 double conv_angle_to_deg(double a) {
   double res;
   res = a * sensitivity;
-  res /= 100;
+  res /= 1000;
   return res;
 }
