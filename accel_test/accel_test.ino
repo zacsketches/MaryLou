@@ -71,8 +71,6 @@ const double sensitivity = 1.0;     //mG / LSB, datasheet page 9
 const int    sample_num  = 1000;     //scalar
 const int    sample_time = 20;      //ms...try to run at 50hz
 vector             raw_g;
-vector              bias;
-vector            comp_g;
 double         raw_angle = 0.0;
 double compensated_angle = 0.0;
 double  theta_angle_bias = 0.0;
