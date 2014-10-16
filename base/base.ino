@@ -26,9 +26,10 @@
 //Supporting libraries
 //#include <Wire.h>
 
-//Macros
+//Logging Macros
 #define LOG_UART Serial
 #define log(x) LOG_UART.println(x)
+#define Log_p(x, y) LOG_UART.println(x, y);
 
 //Physical connections
 const int lt_dir_pin = 12;
