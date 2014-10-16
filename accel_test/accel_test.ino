@@ -7,6 +7,10 @@
     You can use this software as you see fit provided you 
     acknowledge the source.
     
+    Accelerometer calculation to determine pitch based off the
+    outstanding explanation in Freescale App Note AN3461 here:
+    http://www.freescale.com/files/sensors/doc/app_note/AN3461.pdf
+    
     The sensor outputs provided by the library are the raw 16-bit values
     obtained by concatenating the 8-bit high and low accelerometer and
     magnetometer data registers. They can be converted to units of g and
@@ -110,57 +114,16 @@ void loop() {
        now = millis();
    	   accel.read();
 	   accel.shift_accel();
-	   vector temp;
-	   temp.x = accel.A.x;
-	   temp.y = accel.A.y;
-	   temp.z = accel.A.z;
-	   LSM303::vector_normalize(&temp);
+       float Gx = accel.A.x;
+       float Gy = accel.A.y;
+       float Gz = accel.A.z; 
+       double tan_theta = -Gx / sqrt(pow(Gy, 2) + pow(Gz, 2));
+       
+	   angle = atan(tan_theta);
 
-	   // Serial.print("normalized temp: ");
-	   // vector_print(temp);
-	   
-	   // vector_scale(temp, 1000);
-
-	   // Serial.print("scaled temp: ");
-	   // vector_print(temp);
-	   
-	   // accel.A.x = (int)round(temp.x);
-	   // accel.A.y = (int)round(temp.y);
-	   // accel.A.z = (int)round(temp.z);
-	   
-	   // Serial.print("rounded A: ");
-	   // vector_print(accel.A);
-	   
-	   vector_add(&temp, &bias);
-	   
-
-	   
-	   // Serial.print("compensated A: ");
-	   // vector_print(accel.A);
-	   
-	   	    
-	   // A dot Z axis is equal to mag(A) * 1 * cos(theta)
-	   // if you normalize A this reduces to:
-	   //	1 * 1 * cos(theta)
-	   vector z_axis;
-	   z_axis.x = 0.0;
-	   z_axis.y = 0.0;
-	   z_axis.z = 1.0;
-   
-	   double cos_theta = vector_dot(&temp, &z_axis);
-	   if(cos_theta > 1) {
-		   //this extra normalization prevents dot product values that
-		   //exceed 1.0 and crash the acos function.
-		   LSM303::vector_normalize(&temp);
-		   cos_theta = vector_dot(&temp, &z_axis);
-	   }
-//	   Serial.println(cos_theta, 6);
-	   angle = acos(cos_theta);
 	   //Serial.println(angle);
 	   angle *= rad_to_deg;
-
 	   print_angle();
-	   // print_accel_vec();
    }
 }
 
@@ -177,7 +140,7 @@ void print_config() {
 
 void print_angle() {
 	Serial.print("Angle is: ");
-	Serial.println(angle);
+	Serial.println(angle, 3);
 }
 
 void print_accel_vec() {
