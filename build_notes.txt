@@ -82,4 +82,10 @@ Whereas atan2 solves for the result in all four
 quadrants.  See this link for a thorough explanation:
     http://stackoverflow.com/questions/283406/what-is-the-difference-between-atan-and-atan2-in-c
     
+12. Used basic technique for PI controller tuning with ideas
+from Zeiger-Nichols method.  See here for an overview:
+     http://en.wikipedia.org/wiki/Ziegler%E2%80%93Nichols_method
+
+
+    
 
