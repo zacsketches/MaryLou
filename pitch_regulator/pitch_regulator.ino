@@ -83,22 +83,24 @@ public:
         while(!gyro.init());
         result = true;
         gyro.enableDefault();
-        return resutl;
+        return result;
     }
     
     Gyro_reading read(){
         Gyro_reading theta_raw;
         gyro.read();
         theta_raw.omega = gyro.G.y-dc_offset;
-        thata_raw.timestamp = millis();
+        theta_raw.timestamp = millis();
         
         return theta_raw;
     }
     
+    double conv_factor() const { return gyro_sensitivity; }
+    
 private:
     L3G& gyro;
-    static const double gyro_sensitivity = 8.75;    //datasheet page 9.  mdeg/sec
-    static const long   dc_offset = 110;       //units
+    static const double gyro_sensitivity = .00875;    //datasheet page 9.  mdeg/sec
+    static const long   dc_offset = 62;       //units
           
 };
 
@@ -116,17 +118,17 @@ public:
         z_axis.z = 1.0;
     }
     
-    bool.begin() {
+    bool begin() {
         bool result = false;
         while(!accel.init());
         result = true;
         accel.enableDefault();
-        return resutl;
+        return result;
     }
 
     double pitch_angle() {
         double theta_accel = 0.0;
-        accel.read;
+        accel.read();
         accel.shift_accel();
         vector temp;
         temp.x = accel.A.x;
@@ -151,9 +153,9 @@ private:
     LSM303& accel;
     vector bias;
     vector z_axis;
-    static const float x_bias = -50.0;
-    static const float y_bias = -20.0;
-    static const float z_bias =  22.0;
+    static const float x_bias = 0.0521;
+    static const float y_bias = -0.0511;
+    static const float z_bias =  0.0027;
 };
 
 class Drift_adjuster {
@@ -170,27 +172,36 @@ public:
 
 class Gyro_plant {
 public:
-    Gyro_plant() {}
+    Gyro_plant(Calibrated_gyro& gyroscope) : gyro(gyroscope)  {}
     
     double run(Gyro_reading omega_compensated) {
         //time management
-        Time dt = omega_compensated.timestamp - timestamp_prev;
+        Time interval = omega_compensated.timestamp - timestamp_prev;
+        double dt = (double)interval;
         dt = dt / timescale;
         timestamp_prev = omega_compensated.timestamp;
         
         //find trapezoidal omega for integration
-        omega_prev = (omega_prev + omega_compensated.omega) / 2.0;
+        double omega_mean = (omega_prev + omega_compensated.omega) / 2.0;
         
         //perform numerical integration
-        theta_gyro += omega_prev * dt;
+        theta_counts += omega_mean * dt;
         
-        return theta_gyro;
+        //get ready for the next run
+        omega_prev = omega_mean;
+    
+        theta_angle = theta_counts * gyro.conv_factor();      
+  
+        return theta_angle;
     }
     
 private:
-    double theat_gyro;
+    Calibrated_gyro& gyro;
+    double theta_counts;
+    double theta_angle;
     double omega_prev;
     Time timestamp_prev;
+    
 };
 
 class Error_computer{
@@ -198,7 +209,7 @@ public:
     Error_computer() {}
     
     Error run(double theta_gyro, double theta_accel) {
-        Errro result;
+        Error result;
         result.epsilon = theta_gyro - theta_accel;
         result.timestamp = millis();
         return result;
@@ -207,7 +218,7 @@ public:
 
 class PI_controller {
 public:
-    PI_controller(double kp, double ki) :Kp(kp), ki(Ki) {}
+    PI_controller(double kp, double ki) :Kp(kp), Ki(ki) {}
 
     double run(Error input){
         double omega_adjustment = 0.0;
@@ -220,7 +231,7 @@ public:
         epsilon_integrated += input.epsilon * dt;
         
         //solve for adjustment
-        omega_adjustment = Kp * (epsilon) + Ki * (epsilon_integrated);
+        omega_adjustment = Kp * (input.epsilon) + Ki * (epsilon_integrated);
         
         return omega_adjustment;
     }
@@ -238,9 +249,9 @@ private:
 Calibrated_gyro calibrated_gyro(gyro);
 Calibrated_accel calibrated_accel(accel);
 Drift_adjuster drift_adjuster;
-Gyro_plant gyro_plant;
+Gyro_plant gyro_plant(calibrated_gyro);
 Error_computer error_computer;
-PI_controller pi_controller(1.0, 1.0);  //(float Kp, float Ki)
+PI_controller pi_controller(10.0, 0.0);  //(float Kp, float Ki)
 
 //*********************************************************************************
 //                               GLOBAL MODEL VARIABLES
@@ -289,7 +300,7 @@ void loop() {
     //start from error signal and work clockwise around model
     
     //run the error computer
-    theta_accel = callibrated_accel.pitch_angle();
+    theta_accel = calibrated_accel.pitch_angle();
     error_signal = error_computer.run(theta_gyro, theta_accel);
     
     //run the pi_controller
@@ -297,14 +308,49 @@ void loop() {
     
     //run the drift adjuster
     omega_raw = calibrated_gyro.read();
-    omega_compensated = drift_adjuster.run(omega_raw, omega_adjustment)
+    omega_compensated = drift_adjuster.run(omega_raw, omega_adjustment);
     
     //run the gyro plant
     theta_gyro = gyro_plant.run(omega_compensated);
     
-    Serial.print("Theta is: ");
-    Serial.println(theta_gyro,3);
+    char buf[130];
+    char float_buf1[10];
+    char float_buf2[10];
+    char float_buf3[10];
+    char float_buf4[10];
+    char float_buf5[10];
+    char float_buf6[10];
+    char float_buf7[10];
+    char float_buf8[10];
+    
+    sprintf(buf, "theta_acc: %s, err_sig: %s, adjust: %s, o_raw: %s, o_comp: %s, theta_gyro: %s", 
+      ftoa(float_buf1, theta_accel, 3),
+      ftoa(float_buf2, error_signal.epsilon, 3),
+      ftoa(float_buf3, omega_adjustment, 3),
+      ftoa(float_buf4, omega_raw.omega, 3),
+      ftoa(float_buf5, omega_compensated.omega, 3),
+      ftoa(float_buf6, theta_gyro, 3));
+    Serial.println(buf);
+
+//    Serial.print("Theta is: ");
+//    Serial.println(theta_gyro,3);
+
 }
 
+
+//from Arduino forum
+char* ftoa(char* a, double f, int precision)
+{
+  long p[] = {0,10,100,1000,10000,100000,1000000,10000000,100000000};
+  
+  char *ret = a;
+  long heiltal = (long)f;
+  itoa(heiltal, a, 10);
+  while (*a != '\0') a++;
+  *a++ = '.';
+  long desimal = abs((long)((f - heiltal) * p[precision]));
+  itoa(desimal, a, 10);
+  return ret;
+}
 
 
