@@ -7,10 +7,20 @@
     You can use this software as you see fit provided you 
     acknowledge the source.
     
+    This software builds on the LSM303 library provided by Pololu
+    and forked by me at https://github.com/zacsketches/lsm303-arduino.
+    My fork of this library adds several templated vector math
+    functions in the header file, rearranges the file structure so
+    it can be included easiliy in Arduino sketches if you clone the
+    whole repo into your Arduino/library folder, and changes the 
+    vector names to capital letters so the nomenclature in the program
+    reflects the mathematics texts a little better.
+    
     Accelerometer calculation to determine pitch based off the
     outstanding explanation in Freescale App Note AN3461 here:
     http://www.freescale.com/files/sensors/doc/app_note/AN3461.pdf
     
+    *** From Pololu ***
     The sensor outputs provided by the library are the raw 16-bit values
     obtained by concatenating the 8-bit high and low accelerometer and
     magnetometer data registers. They can be converted to units of g and
@@ -29,6 +39,7 @@
     LSM303DLH datasheet (page 11) states a conversion factor of 1 mg/digit
     at this FS setting, so the value of -1009 corresponds to -1009 * 1 =
     1009 mg = 1.009 g.
+    *** End Pololu quote ***
     
     .enableDefault() results in the following sensor config:
       50hz
@@ -62,17 +73,17 @@ const int    sample_time = 20;      //ms...try to run at 50hz
 vector             raw_g;
 vector              bias;
 vector            comp_g;
-double                angle = 0.0;
-Time         now         = 0; 
+double         raw_angle = 0.0;
+double compensated_angle = 0.0;
+double  theta_angle_bias = 0.0;
+Time                 now = 0; 
 
 void setup() {
 	Serial.begin(115200);
 	Serial.println();
     
 	Wire.begin();
-    
-	//may need to add specifics to .init fuction...test with default first.
-	//see L3G.h for alt definitions
+
 	while(!accel.init());
 	Serial.println("Accel initialized");
     
@@ -93,15 +104,13 @@ void setup() {
 	raw_g.x = (long)raw_g.x >> 4;
 	raw_g.y = (long)raw_g.y >> 4;
 	raw_g.z = (long)raw_g.z >> 4;
-	
-	LSM303::vector_normalize(&raw_g);
-	// vector_scale(raw_g, 1000);
 
-	bias.x = -raw_g.x;
-	bias.y = -raw_g.y;
-	bias.z = 1.0-raw_g.z;
-	
-	vector_add(&raw_g, &bias, &comp_g);
+    //direct solution for pitch angle bias
+    float Gx = accel.A.x;
+    float Gy = accel.A.y;
+    float Gz = accel.A.z; 
+    double tan_theta_bias = -Gx / sqrt(pow(Gy, 2) + pow(Gz, 2));
+    theta_angle_bias = atan(tan_theta_bias);
     
 	//Display setup info
 	print_config();
@@ -119,10 +128,11 @@ void loop() {
        float Gz = accel.A.z; 
        double tan_theta = -Gx / sqrt(pow(Gy, 2) + pow(Gz, 2));
        
-	   angle = atan(tan_theta);
-
+	   raw_angle = atan(tan_theta);
+       compensated_angle = raw_angle - theta_angle_bias;
 	   //Serial.println(angle);
-	   angle *= rad_to_deg;
+	   raw_angle *= rad_to_deg;
+	   compensated_angle *= rad_to_deg;
 	   print_angle();
    }
 }
@@ -131,29 +141,15 @@ void print_config() {
 	Serial.print("Raw gravity vector:\n");
 	vector_print(raw_g);
 	
-	Serial.print("Bias vector:\n");
-	vector_print(bias);
-
-	Serial.print("Compensated gravity vector:\n");
-	vector_print(comp_g);
+    Serial.print("Theta angle bias: ");
+    Serial.println(theta_angle_bias*rad_to_deg,5);
+    
+    Serial.println("-------------------------");
 }     
 
 void print_angle() {
-	Serial.print("Angle is: ");
-	Serial.println(angle, 3);
-}
-
-void print_accel_vec() {
-	Serial.print("Compensated Accel vector: ");
-	vector_print(accel.A);		
-}
-
-double conv_unit_to_g(long g) {
-  long res = g;
-  //right shift four becuase lowest four bits are garbage
-  res = (res >> 4);
-  double d_res = res;
-  d_res = d_res * sensitivity;
-  d_res = d_res *.001;
-  return d_res;
+	Serial.print("Raw pitch is: ");
+	Serial.print(raw_angle, 3);
+    Serial.print("\tCompensated pitch is: ");
+    Serial.println(compensated_angle, 3);
 }
