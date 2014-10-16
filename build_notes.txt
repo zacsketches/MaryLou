@@ -68,3 +68,18 @@ const int rt_encoder_B_pin = 4;
 
 9. Outstanding resource for IMU info:
      https://code.google.com/p/ardu-imu/wiki/Theory
+     
+10. The atan or atan2 function is used to calculate pitch
+angle directly from the accelerometer.  The Freescale 
+Application Note 3461 gives an outstanding explanation of
+this.  See AN3461 in the Datasheets folder of the 
+project.
+
+11. The atan and atan2 functions resolve their 
+result with differing rules about quadrants.  In 
+essence atan give a result only in quadrant I or IV.
+Whereas atan2 solves for the result in all four 
+quadrants.  See this link for a thorough explanation:
+    http://stackoverflow.com/questions/283406/what-is-the-difference-between-atan-and-atan2-in-c
+    
+
