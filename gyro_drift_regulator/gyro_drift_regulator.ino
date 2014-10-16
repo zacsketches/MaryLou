@@ -39,8 +39,10 @@
 #include <L3G.h>
 #include <Wire.h>
 
-#define rad_to_deg 57.2958  		//180 / pi
-#define deg_to_rad .0174533 		//pi / 180
+#define RAD_TO_DEG 57.2958  		// 180 / pi
+#define DEG_TO_RAD .0174533 		// pi / 180
+#define GYRO_COUNTS_TO_DEG .00875   // see above
+#define DEG_TO_GYRO_COUNTS 114.2857	// 1 / .00875
 
 typedef unsigned long Time;
 typedef LSM303::vector<float> vector;
@@ -100,23 +102,13 @@ public:
 private:
     L3G& gyro;
     static const double gyro_sensitivity = .00875;    //datasheet page 9.  mdeg/sec
-    static const long   dc_offset = 62;       //units
+    static const long   dc_offset = 126;       //units
           
 };
 
 class Calibrated_accel {
 public:
-    Calibrated_accel(LSM303& accelerometer) : accel(accelerometer) {
-        //load bias data
-        bias.x = x_bias;
-        bias.y = y_bias;
-        bias.z = z_bias;
-        
-        //configure z_axis vector
-        z_axis.x = 0.0;
-        z_axis.y = 0.0;
-        z_axis.z = 1.0;
-    }
+    Calibrated_accel(LSM303& accelerometer) : accel(accelerometer) {}
     
     bool begin() {
         bool result = false;
@@ -130,32 +122,20 @@ public:
         double theta_accel = 0.0;
         accel.read();
         accel.shift_accel();
-        vector temp;
-        temp.x = accel.A.x;
-        temp.y = accel.A.y;
-        temp.z = accel.A.z;
-        LSM303::vector_normalize(&temp);
-        vector_add(&temp, &bias); 
-        double cos_theta = vector_dot(&temp, &z_axis);
-        if(cos_theta > 1.0) {
-            //this extra normalization prevents dot product values that
-            //exceed 1.0 and crash the acos function.
-            LSM303::vector_normalize(&temp);
-            cos_theta = vector_dot(&temp, &z_axis);
-        }
-        theta_accel = acos(cos_theta);
-        theta_accel *= rad_to_deg;
+        float Gx = accel.A.x;
+        float Gy = accel.A.y;
+        float Gz = accel.A.z; 
+        double tan_theta = -Gx / sqrt(pow(Gy, 2) + pow(Gz, 2));
 
-        return theta_accel;
+        theta_accel = atan(tan_theta);
+        theta_accel *= RAD_TO_DEG;
+
+        return theta_accel - theta_bias;
     }
     
 private:
     LSM303& accel;
-    vector bias;
-    vector z_axis;
-    static const float x_bias = 0.0521;
-    static const float y_bias = -0.0511;
-    static const float z_bias =  0.0027;
+    static const float theta_bias =  -0.62306;
 };
 
 class Drift_adjuster {
@@ -211,6 +191,8 @@ public:
     Error run(double theta_gyro, double theta_accel) {
         Error result;
         result.epsilon = theta_gyro - theta_accel;
+		result.epsilon *= DEG_TO_GYRO_COUNTS;
+		result.epsilon *= -1;
         result.timestamp = millis();
         return result;
     }
@@ -251,7 +233,7 @@ Calibrated_accel calibrated_accel(accel);
 Drift_adjuster drift_adjuster;
 Gyro_plant gyro_plant(calibrated_gyro);
 Error_computer error_computer;
-PI_controller pi_controller(10.0, 0.0);  //(float Kp, float Ki)
+PI_controller pi_controller(5.0, 0.001);  //(float Kp, float Ki)
 
 //*********************************************************************************
 //                               GLOBAL MODEL VARIABLES
@@ -323,17 +305,17 @@ void loop() {
     char float_buf7[10];
     char float_buf8[10];
     
-    sprintf(buf, "theta_acc: %s, err_sig: %s, adjust: %s, o_raw: %s, o_comp: %s, theta_gyro: %s", 
-      ftoa(float_buf1, theta_accel, 3),
-      ftoa(float_buf2, error_signal.epsilon, 3),
-      ftoa(float_buf3, omega_adjustment, 3),
-      ftoa(float_buf4, omega_raw.omega, 3),
-      ftoa(float_buf5, omega_compensated.omega, 3),
-      ftoa(float_buf6, theta_gyro, 3));
-    Serial.println(buf);
+//    sprintf(buf, "theta_acc: %s, err_sig: %s, adjust: %s, o_raw: %s, o_comp: %s, theta_gyro: %s", 
+//      ftoa(float_buf1, theta_accel, 3),
+//      ftoa(float_buf2, error_signal.epsilon, 3),
+//      ftoa(float_buf3, omega_adjustment, 3),
+//      ftoa(float_buf4, omega_raw.omega, 3),
+//      ftoa(float_buf5, omega_compensated.omega, 3),
+//      ftoa(float_buf6, theta_gyro, 3));
+//    Serial.println(buf);
 
-//    Serial.print("Theta is: ");
-//    Serial.println(theta_gyro,3);
+    Serial.print("Theta is: ");
+    Serial.println(theta_gyro,3);
 
 }
 
