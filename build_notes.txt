@@ -34,7 +34,7 @@ two motors.
 4. The attitude computer will have an IMU object 
 attached to it and will need to publish a message
 called attitude with the following data:
-    int phi    //pitch neg falling back, pos frwd
+    int theta    //pitch neg falling back, pos frwd
     uint32_t timestamp   //microseconds
     
 5. The state observer will subscribe to the 

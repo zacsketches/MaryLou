@@ -233,7 +233,7 @@ Calibrated_accel calibrated_accel(accel);
 Drift_adjuster drift_adjuster;
 Gyro_plant gyro_plant(calibrated_gyro);
 Error_computer error_computer;
-PI_controller pi_controller(5.0, 0.001);  //(float Kp, float Ki)
+PI_controller pi_controller(5.0, 0.0);  //(float Kp, float Ki)
 
 //*********************************************************************************
 //                               GLOBAL MODEL VARIABLES
