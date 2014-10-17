@@ -1,3 +1,5 @@
+// Compatible with test branch of LSM303
+
 /*
     Basic script to start working with the LSM303DLHC 3-axis
     accel populated on the Pololu IMU v2.

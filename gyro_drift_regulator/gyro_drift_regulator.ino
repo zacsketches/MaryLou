@@ -1,3 +1,5 @@
+//Compatible with test branch of LSM303 and L3G
+
 /*
     An intermediate level script to use the accelerometer pitch
     reading as negative feedback to the gyro pitch estimation with
