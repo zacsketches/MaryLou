@@ -1,3 +1,5 @@
+//Compatible with test branch of LSM303 and L3G
+
 /*
     Basic script to start working with the L3GD20 3-axis
     gyro populated on the Pololu IMU v2.
