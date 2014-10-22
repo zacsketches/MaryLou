@@ -31,19 +31,19 @@ publish a plant status message with the following fields
 5. Consider having the plant balance counts between the
 two motors.
     
-4. The attitude computer will have an IMU object 
-attached to it and will need to publish a message
-called attitude with the following data:
+4. The attitude computer will pointers to an accel object 
+and a magnetometer object, and will need to publish a message
+called pitch with the following data:
     int theta    //pitch neg falling back, pos frwd
     uint32_t timestamp   //microseconds
     
 5. The state observer will subscribe to the 
-attitude message and the plant_status_msg and publish
+pitch message and the plant_status_msg and publish
 the state_vec_msg with the following fields
-    int theta
-    int theta_dot
-    int x
-    int x_dot
+    double theta
+    double theta_dot
+    double x
+    double x_dot
     
 6. The balance regulator will subscribe to the 
 state_vec_msg and publish the control_effort_msg
