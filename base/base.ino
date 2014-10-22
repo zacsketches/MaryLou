@@ -17,11 +17,11 @@
 
 //Glow worm components
 #include <quadrature.h>
-#include <balance_plant.h>
+#include <blocks/balance_plant.h>
 #include <L3G.h>
 #include <LSM303.h>
-#include <attitude_computer.h>
-//#include <State_observer.h>
+#include <blocks/attitude_computer.h>
+#include <blocks/state_observer.h>
 //#include <Balance_regulator.h>
 
 //Supporting libraries
@@ -81,7 +81,8 @@ LSM303 accel;
 Attitude_computer computer(gyro, accel);
 
 //State_observer()
-//State_observer observer;
+State_observer observer;
+
 //Balance_regulator()
 //Balance_regulator regulator;
 
@@ -98,8 +99,9 @@ void setup() {
 //it's not necessary to manually register them with the clearinghouse
 //  ch.register_msg(&plant_status_msg);
 //  ch.register_msg(&pitch_msg);
+//  ch.register_msg(&state_vec_msg);
+
   ch.register_msg(&control_effort_msg);
-  ch.register_msg(&state_vec_msg);
   
   ch.list();
 
@@ -122,8 +124,8 @@ void setup() {
   computer.print();
   
   //initialize the state observer
-//  observer.begin();
-//  observer.print();
+  observer.begin();
+  observer.print();
   
   //initialize the balance regulator
 //  regulator.begin();
@@ -137,8 +139,10 @@ void loop() {
 //  plant_status_msg.print();  
 
   computer.run();
-  pitch_msg.print();
+//  pitch_msg.print();
 
+  observer.run();
+  state_vec_msg.print();
 
 //  delay(1000);
 }
