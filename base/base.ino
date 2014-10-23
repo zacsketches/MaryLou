@@ -29,8 +29,8 @@
 
 //Logging Macros
 #define LOG_UART Serial
-#define log(x) LOG_UART.println(x)
-#define Log_p(x, y) LOG_UART.println(x, y);
+#define LOG(x) LOG_UART.println(x)
+#define LOG_P(x_float, prec) LOG_UART.println(x_float, prec); 
 
 //Physical connections
 const int lt_dir_pin = 12;
@@ -44,8 +44,6 @@ const int rt_pwm_pin = 11;
 const int rt_sense_pin = A1;
 const int rt_encoder_A_pin = 5;
 const int rt_encoder_B_pin = 4;
-
-//const int imu_address;
 
 /*------------Required to initiate the Glow Worm Framework---------------*/
 gw::Clearinghouse ch;
@@ -93,7 +91,7 @@ void setup() {
   Wire.begin();
   gw::wire_begun = true;
   
-  log("test of log macro");
+  LOG("test of log macro");
 
 //Once messages are registered with the clearinghouse by the publisher
 //it's not necessary to manually register them with the clearinghouse

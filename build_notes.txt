@@ -86,6 +86,9 @@ quadrants.  See this link for a thorough explanation:
 from Zeiger-Nichols method.  See here for an overview:
      http://en.wikipedia.org/wiki/Ziegler%E2%80%93Nichols_method
 
+13. The deadband lab saved in the datasheets is also a good reference
+for control of an atmega32 on the same PCB as an L293.
+     http://claymore.engineer.gvsu.edu/~jackh/eod/courses/egr345/fall05/lab_deadband.pdf
 
     
 
