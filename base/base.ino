@@ -17,19 +17,20 @@
 
 //Glow worm components
 #include <quadrature.h>
-#include <balance_plant.h>
-//#include <Imu.h>
-//#include <Attitude_computer.h>
-//#include <State_observer.h>
+#include <blocks/balance_plant.h>
+#include <L3G.h>
+#include <LSM303.h>
+#include <blocks/attitude_computer.h>
+#include <blocks/state_observer.h>
 //#include <Balance_regulator.h>
 
 //Supporting libraries
-//#include <Wire.h>
+#include <Wire.h>
 
 //Logging Macros
 #define LOG_UART Serial
-#define log(x) LOG_UART.println(x)
-#define Log_p(x, y) LOG_UART.println(x, y);
+#define LOG(x) LOG_UART.println(x)
+#define LOG_P(x_float, prec) LOG_UART.println(x_float, prec); 
 
 //Physical connections
 const int lt_dir_pin = 12;
@@ -43,8 +44,6 @@ const int rt_pwm_pin = 11;
 const int rt_sense_pin = A1;
 const int rt_encoder_A_pin = 5;
 const int rt_encoder_B_pin = 4;
-
-//const int imu_address;
 
 /*------------Required to initiate the Glow Worm Framework---------------*/
 gw::Clearinghouse ch;
@@ -70,30 +69,43 @@ Quadrature_encoder<rt_encoder_A_pin,rt_encoder_B_pin>* rt_encoder =
   new Quadrature_encoder<rt_encoder_A_pin,rt_encoder_B_pin>(Position::rt,"rt_enc");
 //Blance_plant()
 Balance_plant plant;
-//Imu(address)
-//Imu* imu(imu_address);
-//Attitude_computer()
-//Attitude_computer computer;
+
+//todo...change this so the gyro and accel are attached...not required by the
+//constructor.  This will alow more flexibility in attaching other kinds of gyros
+//and/or accelerometers.
+//Attitude_computer(L3G&, LSM303&)
+L3G gyro;
+LSM303 accel;
+Attitude_computer computer(gyro, accel);
+
 //State_observer()
-//State_observer observer;
+State_observer observer;
+
 //Balance_regulator()
 //Balance_regulator regulator;
 
 void setup() {
   Serial.begin(115200);
   Serial.println();
-  log("test of log macro");
   
-  ch.register_msg(&control_effort_msg);
+  Wire.begin();
+  gw::wire_begun = true;
+  
+  LOG("test of log macro");
+
+//Once messages are registered with the clearinghouse by the publisher
+//it's not necessary to manually register them with the clearinghouse
 //  ch.register_msg(&plant_status_msg);
-  ch.register_msg(&pitch_msg);
-  ch.register_msg(&state_vec_msg);
+//  ch.register_msg(&pitch_msg);
+//  ch.register_msg(&state_vec_msg);
+
+  ch.register_msg(&control_effort_msg);
   
   ch.list();
 
   //initialize the balance plant
   rt_motor->reverse();        //right motor is installed opposite left
-  rt_encoder->reverse();      //right motor encoder also installed opposite
+//  lt_encoder->reverse();      //left motor encoder installed opposite
   plant.attach(lt_encoder);
   plant.attach(rt_encoder);
   plant.attach(lt_motor);
@@ -102,17 +114,16 @@ void setup() {
   plant.print();
   
   //create a static control effort msg for debugging
-  control_effort_msg.u = -300;
+  control_effort_msg.u = 400;
   
   //initialize the attitude computer
-//  imu.begin();
-//  computer.attach(imu);
-//  computer.begin();
-//  computer.print();
+  computer.begin();
+  computer.set_ki(.0006);
+  computer.print();
   
   //initialize the state observer
-//  observer.begin();
-//  observer.print();
+  observer.begin();
+  observer.print();
   
   //initialize the balance regulator
 //  regulator.begin();
@@ -123,6 +134,13 @@ void setup() {
 
 void loop() {
   plant.run();
-  plant_status_msg.print();  
-  delay(1000);
+//  plant_status_msg.print();  
+
+  computer.run();
+//  pitch_msg.print();
+
+  observer.run();
+  state_vec_msg.print();
+
+//  delay(1000);
 }
