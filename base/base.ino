@@ -16,7 +16,6 @@
 #include <messages/state_vec.h>
 
 //Glow worm components
-#include <quadrature.h>
 #include <blocks/balance_plant.h>
 #include <L3G.h>
 #include <LSM303.h>
@@ -26,6 +25,7 @@
 
 //Supporting libraries
 #include <Wire.h>
+#include <quadrature.h>
 
 //Logging Macros
 #define LOG_UART Serial
@@ -114,7 +114,7 @@ void setup() {
   plant.print();
   
   //create a static control effort msg for debugging
-  control_effort_msg.u = 400;
+  control_effort_msg.u = 20;
   
   //initialize the attitude computer
   computer.begin();
@@ -140,7 +140,7 @@ void loop() {
 //  pitch_msg.print();
 
   observer.run();
-  state_vec_msg.print();
+//  state_vec_msg.print();
 
 //  delay(1000);
 }

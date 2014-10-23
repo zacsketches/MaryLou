@@ -89,6 +89,13 @@ from Zeiger-Nichols method.  See here for an overview:
 13. The deadband lab saved in the datasheets is also a good reference
 for control of an atmega32 on the same PCB as an L293.
      http://claymore.engineer.gvsu.edu/~jackh/eod/courses/egr345/fall05/lab_deadband.pdf
-
+I implemented deadband compensation as a linear scaleing.  Each gw::Motor now
+has a function to set_deadband(int forward, int reverse).  PWM signals
+falling between these values will be scaled with the Arduino map() function
+like this:
+	pwm_compensated = map(pwm_raw, 0, 255, deadband_limit, 255);
+Then the compensated value will be written to the motor.  The gw::Motor
+default values for deadband are (0,0).  So if they are not set then no
+scaling will occur.
     
 
