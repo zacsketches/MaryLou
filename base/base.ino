@@ -107,7 +107,7 @@ void setup() {
 
   //initialize the balance plant
   rt_motor->reverse();        //right motor is installed opposite left
-  rt_encoder->reverse();      //right motor encoder also installed opposite
+//  lt_encoder->reverse();      //left motor encoder installed opposite
   plant.attach(lt_encoder);
   plant.attach(rt_encoder);
   plant.attach(lt_motor);
