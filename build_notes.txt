@@ -98,4 +98,6 @@ Then the compensated value will be written to the motor.  The gw::Motor
 default values for deadband are (0,0).  So if they are not set then no
 scaling will occur.
     
-
+14. Wikipedia has a good article on moments of inertia. I think we will
+be able to compute the moment of inertia for our pendulum based off
+the system they give for compound pendulums.
