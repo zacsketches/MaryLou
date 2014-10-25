@@ -106,3 +106,10 @@ reference for the statespace controller necessary for this project.
 be able to compute the moment of inertia for our pendulum based off
 the system they give for compound pendulums.
 
+16. MATLAB equations of motion, where phi is the linearized theta:
+	(I+m*l^2)phi_double_dot - m*g*l*phi = m*l*x_double_dot
+	(M+m)x_double_dot + b*x_dot - m*l*phi_double_dot = u
+	
+17. Ogata has the same equations, but does not consider the x_dot friction
+component in the second equation.  We might need to take this route because
+it's going to be hard to measure friction between the tires and body.
