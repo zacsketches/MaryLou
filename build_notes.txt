@@ -98,4 +98,8 @@ Then the compensated value will be written to the motor.  The gw::Motor
 default values for deadband are (0,0).  So if they are not set then no
 scaling will occur.
     
+14. The MATLAB example for control of an inverted pendulum is a great
+reference for the statespace controller necessary for this project.
+	http://ctms.engin.umich.edu/CTMS/index.php?example=InvertedPendulum&section=SystemModeling
+
 
