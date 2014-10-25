@@ -102,4 +102,7 @@ scaling will occur.
 reference for the statespace controller necessary for this project.
 	http://ctms.engin.umich.edu/CTMS/index.php?example=InvertedPendulum&section=SystemModeling
 
+15. Wikipedia has a good article on moments of inertia. I think we will
+be able to compute the moment of inertia for our pendulum based off
+the system they give for compound pendulums.
 
