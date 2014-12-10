@@ -13,10 +13,10 @@
     and forked by me at https://github.com/zacsketches/lsm303-arduino.
     My fork of this library adds several templated vector math
     functions in the header file, rearranges the file structure so
-    it can be included easiliy in Arduino sketches if you clone the
-    whole repo into your Arduino/library folder, and changes the 
+    it can be included easily in Arduino sketches if you clone the
+    whole repo into your Arduino/library folder.  I also change the 
     vector names to capital letters so the nomenclature in the program
-    reflects the mathematics texts a little better.
+    reflects mathematics texts a little better.
     
     Accelerometer calculation to determine pitch based off the
     outstanding explanation in Freescale App Note AN3461 here:
@@ -66,11 +66,10 @@
 typedef unsigned long Time;
 typedef LSM303::vector<float> vector;
 
-LSM303 accel;
-
+LSM303 accel(LSM303::I2C_port::secondary);
 
 const double sensitivity = 1.0;     //mG / LSB, datasheet page 9
-const int    sample_num  = 1000;     //scalar
+const int    sample_num  = 10;    //scalar
 const int    sample_time = 20;      //ms...try to run at 50hz
 vector             raw_g;
 double         raw_angle = 0.0;
@@ -82,7 +81,16 @@ void setup() {
 	Serial.begin(115200);
 	Serial.println();
     
-	Wire.begin();
+	/* I use the Arduino Due for many of my projects which
+	   has two I2C ports.  The default I2C port is accessed
+	   on pin 20 (SDA) and 21 (SCL).  The second port is
+	   close to the AREF pin.  The command
+			Wire.begin()
+	   initializes the default port.  Whereas the command
+			Wire1.begin()
+	   initializes the secondary port.
+	*/
+	Wire1.begin();
 
 	while(!accel.init());
 	Serial.println("Accel initialized");
@@ -96,6 +104,8 @@ void setup() {
 		raw_g.x += (int)accel.A.x;
 		raw_g.y += (int)accel.A.y;
 		raw_g.z += (int)accel.A.z;
+                Serial.print("    Taking sample: ");
+                Serial.println(i);
 	}
 	raw_g.x /= sample_num;
 	raw_g.y /= sample_num;
