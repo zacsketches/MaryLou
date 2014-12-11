@@ -112,7 +112,9 @@ the system they give for compound pendulums.
 	
 17. Ogata has the same equations, but does not consider the x_dot friction
 component in the second equation.  We might need to take this route because
-it's going to be hard to measure friction between the tires and body.
+it's going to be hard to measure friction between the tires and body.  Finally,
+there is an interesting discussion from Stanford at:
+	http://web.stanford.edu/class/me161/documents/InvertedPendulumOnCartSolution.pdf
 
 18. Because MaryLou is an irregular shape computing I, necessary for the equations
 in note 16, is not trivial.  See these YouTube videos for background on 
