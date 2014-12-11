@@ -10,9 +10,8 @@ Bill of Materials:
      2 x Pololu universal mounting hubs
      2 x Pololu ?? x 8mm wheels
      4 x 3/4" nylon standoffs
-     custom power and signal distribution board
+     custom power and signal distribution boards
      
-
 1. Start here on Due and motor shield
      http://arduino.cc/en/Tutorial/DueMotorShieldDC
 
@@ -31,7 +30,7 @@ publish a plant status message with the following fields
 5. Consider having the plant balance counts between the
 two motors.
     
-4. The attitude computer will pointers to an accel object 
+4. The attitude computer will hold pointers to an accel object 
 and a magnetometer object, and will need to publish a message
 called pitch with the following data:
     int theta    //pitch neg falling back, pos frwd
@@ -82,14 +81,15 @@ Whereas atan2 solves for the result in all four
 quadrants.  See this link for a thorough explanation:
     http://stackoverflow.com/questions/283406/what-is-the-difference-between-atan-and-atan2-in-c
     
-12. Used basic technique for PI controller tuning with ideas
-from Zeiger-Nichols method.  See here for an overview:
+12. Used basic technique for PI controller tuning on the 
+attitude computer with ideas from Zeiger-Nichols method.  
+See here for an overview:
      http://en.wikipedia.org/wiki/Ziegler%E2%80%93Nichols_method
 
 13. The deadband lab saved in the datasheets is also a good reference
 for control of an atmega32 on the same PCB as an L293.
      http://claymore.engineer.gvsu.edu/~jackh/eod/courses/egr345/fall05/lab_deadband.pdf
-I implemented deadband compensation as a linear scaleing.  Each gw::Motor now
+I implemented deadband compensation as a linear scaling.  Each gw::Motor now
 has a function to set_deadband(int forward, int reverse).  PWM signals
 falling between these values will be scaled with the Arduino map() function
 like this:
@@ -113,3 +113,10 @@ the system they give for compound pendulums.
 17. Ogata has the same equations, but does not consider the x_dot friction
 component in the second equation.  We might need to take this route because
 it's going to be hard to measure friction between the tires and body.
+
+18. Because MaryLou is an irregular shape computing I, necessary for the equations
+in note 16, is not trivial.  See these YouTube videos for background on 
+computing the Mass Moment of Inertia by suspending it from the ceiling.
+	https://www.youtube.com/watch?v=m9iHEanmNWc
+	https://www.youtube.com/watch?v=tfrzMczTv8g
+	https://www.youtube.com/watch?v=4lcVQzdK_vE
