@@ -9,6 +9,9 @@
 //Glow Worm core
 #include <clearinghouse.h>
 
+//Physical connections for MaryLou
+#include<MaryLou.h>
+
 //Glow Worm messages
 #include <messages/plant_status.h>
 #include <messages/control_effort.h>
@@ -17,8 +20,6 @@
 
 //Glow worm components
 #include <blocks/balance_plant.h>
-#include <L3G.h>
-#include <LSM303.h>
 #include <blocks/attitude_computer.h>
 #include <blocks/state_observer.h>
 //#include <Balance_regulator.h>
@@ -26,24 +27,13 @@
 //Supporting libraries
 #include <Wire.h>
 #include <quadrature.h>
+#include <L3G.h>
+#include <LSM303.h>
 
 //Logging Macros
 #define LOG_UART Serial
 #define LOG(x) LOG_UART.println(x)
 #define LOG_P(x_float, prec) LOG_UART.println(x_float, prec); 
-
-//Physical connections
-const int lt_dir_pin = 12;
-const int lt_pwm_pin = 3;
-const int lt_sense_pin = A0;
-const int lt_encoder_A_pin = 7;
-const int lt_encoder_B_pin = 6;
-
-const int rt_dir_pin = 13;
-const int rt_pwm_pin = 11;
-const int rt_sense_pin = A1;
-const int rt_encoder_A_pin = 5;
-const int rt_encoder_B_pin = 4;
 
 /*------------Required to initiate the Glow Worm Framework---------------*/
 gw::Clearinghouse ch;
