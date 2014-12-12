@@ -1740,7 +1740,7 @@ by exp-lbrs.ulp</description>
 <clearance class="4" value="0.6096"/>
 </class>
 </classes>
-<designrules name="default *">
+<designrules name="DAZL">
 <description language="en">&lt;b&gt;EAGLE Design Rules&lt;/b&gt;
 &lt;p&gt;
 The default Design Rules have been set to cover
