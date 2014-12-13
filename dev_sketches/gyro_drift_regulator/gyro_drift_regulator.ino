@@ -3,10 +3,15 @@
 /*
     An intermediate level script to use the accelerometer pitch
     reading as negative feedback to the gyro pitch estimation with
-    the intent of reducing the gyro drift error.  See diagram one
-    in the DCM document in datasheets for a general idea of the 
-    control system.  Imagine that we are only controlling for one
-    axis instead of three and that is what I'm implementing here.
+    the intent of reducing the gyro drift error.
+    
+    See the PowerPoint brief in the datasheets section for the block
+    diagram implemented here.
+   
+    Defined values for gyro DC_offset and accel theta_bias were taken from
+    values collected in gyro_test.ino and accel_test.ino run multiple
+    times.  These values are a function of installation alignment and 
+    inherent sensor error.  
     
     (c) Zac Staples zacsketches (at) github.
     
@@ -46,11 +51,15 @@
 #define GYRO_COUNTS_TO_DEG .00875   // see above
 #define DEG_TO_GYRO_COUNTS 114.2857	// 1 / .00875
 
+#define THETA_BIAS -0.43329    //FROM EXPERIMENTAL DATA WITH ACCEL_TEST.INO
+#define DC_OFFSET -223         //From experimental data with gyro_test.ino
+
+
 typedef unsigned long Time;
 typedef LSM303::vector<float> vector;
 
-LSM303 accel;
-L3G gyro;
+LSM303 accel(LSM303::I2C_port::secondary);
+L3G gyro(L3G::I2C_port::secondary);
 
 // Timing constants
 Time         now         = 0;   
@@ -80,7 +89,7 @@ struct Error {
 
 class Calibrated_gyro {
 public:
-    Calibrated_gyro(L3G& gyroscope) : gyro(gyroscope) {}
+    Calibrated_gyro(L3G& gyroscope) : gyro(gyroscope), pitch_axis(gyro.G.x) {}
     
     bool begin() {
         bool result = false;
@@ -93,7 +102,7 @@ public:
     Gyro_reading read(){
         Gyro_reading theta_raw;
         gyro.read();
-        theta_raw.omega = gyro.G.y-dc_offset;
+        theta_raw.omega = pitch_axis - dc_offset;
         theta_raw.timestamp = millis();
         
         return theta_raw;
@@ -104,13 +113,15 @@ public:
 private:
     L3G& gyro;
     static const double gyro_sensitivity = .00875;    //datasheet page 9.  mdeg/sec
-    static const long   dc_offset = 126;       //units
+    static const long   dc_offset = DC_OFFSET;              //units
+    float& pitch_axis;
           
 };
 
 class Calibrated_accel {
 public:
-    Calibrated_accel(LSM303& accelerometer) : accel(accelerometer) {}
+    Calibrated_accel(LSM303& accelerometer) 
+        : accel(accelerometer), roll_axis(accel.A.y), yaw_axis(accel.A.z) {}
     
     bool begin() {
         bool result = false;
@@ -124,20 +135,19 @@ public:
         double theta_accel = 0.0;
         accel.read();
         accel.shift_accel();
-        float Gx = accel.A.x;
-        float Gy = accel.A.y;
-        float Gz = accel.A.z; 
-        double tan_theta = -Gx / sqrt(pow(Gy, 2) + pow(Gz, 2));
+        float Gy = roll_axis;
+        float Gz = -1 * yaw_axis;
+        theta_accel = atan2(Gy, Gz);
 
-        theta_accel = atan(tan_theta);
         theta_accel *= RAD_TO_DEG;
-
         return theta_accel - theta_bias;
     }
     
 private:
     LSM303& accel;
-    static const float theta_bias =  -0.62306;
+    static const float theta_bias = THETA_BIAS;
+    int16_t& roll_axis;
+    int16_t& yaw_axis;
 };
 
 class Drift_adjuster {
@@ -235,7 +245,7 @@ Calibrated_accel calibrated_accel(accel);
 Drift_adjuster drift_adjuster;
 Gyro_plant gyro_plant(calibrated_gyro);
 Error_computer error_computer;
-PI_controller pi_controller(5.0, 0.0);  //(float Kp, float Ki)
+PI_controller pi_controller(5.0, 0.005);  //(float Kp, float Ki)
 
 //*********************************************************************************
 //                               GLOBAL MODEL VARIABLES
@@ -261,7 +271,7 @@ void setup() {
     Serial.begin(115200);
     Serial.println();
     
-    Wire.begin();
+    Wire1.begin();
     
     Serial.println("starting gyro");
     while(!calibrated_gyro.begin());
@@ -297,16 +307,16 @@ void loop() {
     //run the gyro plant
     theta_gyro = gyro_plant.run(omega_compensated);
     
-    char buf[130];
-    char float_buf1[10];
-    char float_buf2[10];
-    char float_buf3[10];
-    char float_buf4[10];
-    char float_buf5[10];
-    char float_buf6[10];
-    char float_buf7[10];
-    char float_buf8[10];
-    
+//    char buf[130];
+//    char float_buf1[10];
+//    char float_buf2[10];
+//    char float_buf3[10];
+//    char float_buf4[10];
+//    char float_buf5[10];
+//    char float_buf6[10];
+//    char float_buf7[10];
+//    char float_buf8[10];
+//    
 //    sprintf(buf, "theta_acc: %s, err_sig: %s, adjust: %s, o_raw: %s, o_comp: %s, theta_gyro: %s", 
 //      ftoa(float_buf1, theta_accel, 3),
 //      ftoa(float_buf2, error_signal.epsilon, 3),

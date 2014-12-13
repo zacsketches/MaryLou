@@ -1,41 +1,49 @@
-//Physical connections
-const int lt_dir_pin = 12;
-const int lt_pwm_pin = 3;
-const int lt_sense_pin = A0;
-const int lt_encoder_A_pin = 7;
-const int lt_encoder_B_pin = 6;
+/*
+	Motor test
+	
+	Test the physcial connections in conjunction with the Arduino
+	Motor Shield to ensure we get movent in all directions.
+	
+	Use the physical pin connections from the MaryLou library
+*/
 
-const int rt_dir_pin = 13;
-const int rt_pwm_pin = 11;
-const int rt_sense_pin = A1;
-const int rt_encoder_A_pin = 5;
-const int rt_encoder_B_pin = 4;
+#include <MaryLou.h>
 
 void setup() {  
-  pinMode(rt_dir_pin, OUTPUT); //Initiates Motor Channel A pin
-  pinMode(lt_dir_pin, OUTPUT); //Initiates Motor Channel A pin
+  pinMode(RT_DIR_PIN, OUTPUT); //Initiates Motor Channel A pin
+  pinMode(LT_DIR_PIN, OUTPUT); //Initiates Motor Channel A pin
 }
 
 void loop(){
-    //forward @ half speed
-  digitalWrite(rt_dir_pin, HIGH); //Establishes forward direction of Channel A
-  analogWrite(rt_pwm_pin, 100);   //Spins the motor on Channel A at full speed
-  digitalWrite(lt_dir_pin, HIGH); //Establishes forward direction of Channel A
-  analogWrite(lt_pwm_pin, 100);   //Spins the motor on Channel A at full speed
+  //left forward @ half speed
+  analogWrite(RT_PWM_PIN, 0);   //Spins the motor on Channel A at half speed
+  digitalWrite(LT_DIR_PIN, HIGH); //Establishes forward direction of Channel A
+  analogWrite(LT_PWM_PIN, 100);   //Spins the motor on Channel A at 100 speed
+  delay(3000);
+
+  //right forward @ half speed
+  analogWrite(LT_PWM_PIN, 0);   //Spins the motor on Channel A at half speed
+  digitalWrite(RT_DIR_PIN, HIGH); //Establishes forward direction of Channel A
+  analogWrite(RT_PWM_PIN, 100);   //Spins the motor on Channel A at 100 speed
+  delay(3000);
+
   
+  //left backward @ half speed
+  analogWrite(RT_PWM_PIN, 0);
+  digitalWrite(LT_DIR_PIN, LOW); //Establishes backward direction of Channel A
+  analogWrite(LT_PWM_PIN, 123);   //Spins the motor on Channel A at half speed
   delay(3000);
   
-  //backward @ half speed
-  digitalWrite(rt_dir_pin, LOW); //Establishes backward direction of Channel A
-  analogWrite(rt_pwm_pin, 123);   //Spins the motor on Channel A at half speed
-  digitalWrite(lt_dir_pin, LOW); //Establishes backward direction of Channel A
-  analogWrite(lt_pwm_pin, 123);   //Spins the motor on Channel A at half speed
-  
+  //right backward @ half speed
+  analogWrite(LT_PWM_PIN, 0);   //Spins the motor on Channel A at half speed
+  digitalWrite(RT_DIR_PIN, LOW); //Establishes forward direction of Channel A
+  analogWrite(RT_PWM_PIN, 100);   //Spins the motor on Channel A at 100 speed
   delay(3000);
   
-  digitalWrite(9, HIGH); //Eengage the Brake for Channel A
-  
-  delay(1000);
-  
+  //coast both motors to a stop
+  analogWrite(RT_PWM_PIN, 0);   //Spins the motor on Channel A at half speed
+  analogWrite(LT_PWM_PIN, 0);   //Spins the motor on Channel A at half speed
+
+  delay(3000);
 }
 
