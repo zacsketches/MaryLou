@@ -166,6 +166,79 @@ class Gyro_plant {
 public:
     Gyro_plant(Calibrated_gyro& gyroscope) : gyro(gyroscope)  {}
     
+    struct Fifo_list{
+        Gyro_reading list[4];
+        int len;
+        int pointer;  //keep the pointer on the most recent data
+        
+        Fifo_list(int list_length) {
+            pointer = 0;
+            len = list_length;
+        }
+        
+        void add(Gyro_reading val) {
+            //the pointer locates the position in the array where new data
+            //gets inserted
+            advance_pointer(pointer);
+            list[pointer] = val;
+        }
+        
+        void advance_pointer(int& ptr) {
+            ++ptr;
+            if(ptr >= len) {
+                ptr = 0;
+            }   
+        }
+        
+        void regress_pointer(int& ptr) {
+            --ptr;
+            if(ptr < 0) {
+                ptr = len-1;
+            }   
+        }
+        
+        void data(Gyro_reading* copy) {
+            //fill the copy list with the current data.  I want a list that
+            //has the oldest data in position[0] with progressively newer
+            //data in subsequent locations
+            int dup_pointer = pointer;
+            for(int i=len-1; i<0; --i) {
+                copy[i]=list[dup_pointer];
+                regress_pointer(dup_pointer);   
+            }
+        }
+        
+        double w0() {
+            int tmp_ptr = pointer;
+            regress_pointer(tmp_ptr);
+            regress_pointer(tmp_ptr);
+            regress_pointer(tmp_ptr);
+            return list[tmp_ptr].omega;
+        }
+        
+        double w1() {
+            int tmp_ptr = pointer;
+            regress_pointer(tmp_ptr);
+            regress_pointer(tmp_ptr);
+            return list[tmp_ptr].omega;
+        }
+        
+        double w2() {
+            int tmp_ptr = pointer;
+            regress_pointer(tmp_ptr);
+            return list[tmp_ptr].omega;
+        }
+        double w3() {
+            return list[pointer].omega;
+        }
+        Time t1() {
+            int tmp_ptr = pointer;
+            regress_pointer(tmp_ptr);
+            regress_pointer(tmp_ptr);
+            return list[tmp_ptr].timestamp;
+        }
+    };
+    
     double run(Gyro_reading omega_compensated) {
         //time management
         Time interval = omega_compensated.timestamp - timestamp_prev;
@@ -185,6 +258,61 @@ public:
         theta_angle = theta_counts * gyro.conv_factor();      
   
         return theta_angle;
+    }
+    
+    /* 
+       Run a simpson integration instead of trapezoidal.  See if a 
+       slightly more complex numerical integration yields a more stable
+       gyro.  The max mechanical response speed of the system is probably
+       around 3hz so taking a little bit of time to do a better integration
+       probably isn't going to delay the control command enough to 
+       lose controlability.
+       
+       We basically run the simpson 3/8's rule for four data points and
+       subtract the simpson 1/3 rule for three data points.  This gets 
+       the little slice and adds it to the total.
+       
+       http://mathworld.wolfram.com/Simpsons38Rule.html
+       http://mathworld.wolfram.com/SimpsonsRule.html
+    */ 
+    double run_simpson(Gyro_reading omega_compensated) {
+        static Fifo_list hist(4);
+        double simpson_counts;
+        static double simpson_counts_prev;
+        static Time timestamp_prev;
+        static double simpson_angle;
+        
+        hist.add(omega_compensated);
+        
+        //time management
+        Time interval = omega_compensated.timestamp - timestamp_prev;
+        double dt = (double)interval;
+        dt = dt / timescale;
+        timestamp_prev = omega_compensated.timestamp;
+        
+        //debug
+//        Serial.print("\two is: ");
+//        Serial.println(hist.w0());
+//        Serial.print("\tw1 is: ");
+//        Serial.println(hist.w1());
+//        Serial.print("\tw2 is: ");
+//        Serial.println(hist.w2());
+//        Serial.print("\tw3 is: ");
+//        Serial.println(hist.w3());        
+//        Serial.print("\tt0 is: ");
+//        Serial.println(hist.t1());        
+//        Serial.print("\tdt is: ");
+//        Serial.println(dt,5);
+
+        //would be more accurate if I ignored the first four samples
+        simpson_counts = simpson_counts_prev + (9.0/24.0*hist.w3() + 19.0/24.0*hist.w2() - 5.0/24.0*hist.w1() + 1.0/24.0*hist.w0()) * dt;
+                
+        simpson_angle = simpson_counts * gyro.conv_factor();
+        
+        //get ready for the next run
+        simpson_counts_prev = simpson_counts;
+        
+        return simpson_angle;
     }
     
 private:
@@ -214,20 +342,50 @@ class PI_controller {
 public:
     PI_controller(double kp, double ki) :Kp(kp), Ki(ki) {}
 
-    double run(Error input){
+    double run_parallel(Error input){
         double omega_adjustment = 0.0;
         
         // Time management
-        Time dt = input.timestamp - timestamp_prev;
-        dt /= timescale;
+        Time interval = input.timestamp - timestamp_prev;
+        double dt = (double)interval;
+        dt = dt / timescale;
+        timestamp_prev = input.timestamp;
         
-        //integrate
+        //trap z integration for epsilon
         epsilon_integrated += input.epsilon * dt;
         
         //solve for adjustment
         omega_adjustment = Kp * (input.epsilon) + Ki * (epsilon_integrated);
         
         return omega_adjustment;
+    }
+    
+    double run_standard(Error input) {
+        //see http://en.wikipedia.org/wiki/PID_controller for a discussion of standard form
+        //Ki is related to Ti by the expression
+        //         Kp
+        //  Ki = -------
+        //         Ti
+        //
+        //I want to bring the system into balance in ten timesteps so I am using 10 for Ti
+        //therefore, Ki/Kp = 1/Ki
+        static double one_over_Ti = Ki/Kp;
+        
+        double omega_adjustment = 0.0;
+        
+        // Time management
+        Time interval = input.timestamp - timestamp_prev;
+        double dt = (double)interval;
+        dt = dt / timescale;
+        timestamp_prev = input.timestamp;
+        
+        //trap z integration for epsilon
+        epsilon_integrated += input.epsilon * dt;
+        
+        //solve for adjustment
+        omega_adjustment = Kp * (input.epsilon +  one_over_Ti*epsilon_integrated);
+        
+        return omega_adjustment;  
     }
     
 private:
@@ -245,7 +403,7 @@ Calibrated_accel calibrated_accel(accel);
 Drift_adjuster drift_adjuster;
 Gyro_plant gyro_plant(calibrated_gyro);
 Error_computer error_computer;
-PI_controller pi_controller(5.0, 0.005);  //(float Kp, float Ki)
+PI_controller pi_controller(4.0, 2.0);  //(float Kp, float Ki)
 
 //*********************************************************************************
 //                               GLOBAL MODEL VARIABLES
@@ -291,21 +449,24 @@ void setup() {
 }
 
 void loop() {
-    //start from error signal and work clockwise around model
+    //create a few static variables to analyze the min and max data
+    static double max_theta = 0.0;
+    static double min_theta = 500.0;
     
+    //start from error signal and work clockwise around model
     //run the error computer
     theta_accel = calibrated_accel.pitch_angle();
     error_signal = error_computer.run(theta_gyro, theta_accel);
     
     //run the pi_controller
-    omega_adjustment = pi_controller.run(error_signal);
+    omega_adjustment = pi_controller.run_standard(error_signal);
     
     //run the drift adjuster
     omega_raw = calibrated_gyro.read();
     omega_compensated = drift_adjuster.run(omega_raw, omega_adjustment);
     
     //run the gyro plant
-    theta_gyro = gyro_plant.run(omega_compensated);
+    theta_gyro = gyro_plant.run_simpson(omega_compensated);
     
 //    char buf[130];
 //    char float_buf1[10];
@@ -325,9 +486,15 @@ void loop() {
 //      ftoa(float_buf5, omega_compensated.omega, 3),
 //      ftoa(float_buf6, theta_gyro, 3));
 //    Serial.println(buf);
-
+    max_theta = max(theta_gyro, max_theta);
+    min_theta = min(theta_gyro, min_theta);
+    
     Serial.print("Theta is: ");
-    Serial.println(theta_gyro,3);
+    Serial.print(theta_gyro,3);
+    Serial.print("\tmax: ");
+    Serial.print(max_theta,3);    
+    Serial.print("\tmin: ");
+    Serial.println(min_theta,3);
 
 }
 
