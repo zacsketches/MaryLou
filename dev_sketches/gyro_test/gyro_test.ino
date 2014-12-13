@@ -1,4 +1,4 @@
-//Compatible with test branch of LSM303 and L3G
+//Compatible with test branch of L3G
 
 /*
     Basic script to start working with the L3GD20 3-axis
@@ -16,6 +16,9 @@
    latest read from the gyro.  I changed this to 'G' because it's more familiar
    to me to use vectors with a capital letter  
    
+   Additionally, I configured the L3G library to work on both ports of the
+   Arduino Due
+   
    I also need to look at why the Pololu library uses floats for the values
    of G when, based off the datasheet page 26, the sensor returns twos 
    complement integer values for its readings.
@@ -31,7 +34,10 @@
 #include <L3G.h>
 #include <Wire.h>
 
-L3G gyro;
+L3G gyro(L3G::I2C_port::secondary);
+
+//determined by the physical installtion of the device in the robot
+float& pitch_rate = gyro.G.x;
 
 typedef unsigned long Time;
 
@@ -49,7 +55,7 @@ void setup() {
     Serial.begin(115200);
     Serial.println();
     
-    Wire.begin();
+    Wire1.begin();
     
     //may need to add specifics to .init fuction...test with default first.
     //see L3G.h for alt definitions
@@ -62,17 +68,17 @@ void setup() {
     //Measure DC Offset (datasheet refers to Zero-rate-level)
     for(int i = 0; i < sample_num; ++i) {
         gyro.read();
-        dc_offset += int(gyro.G.y);
+        dc_offset += int(pitch_rate);
     }
     dc_offset /= sample_num;
     
     //Measure max noise threshold
     for(int i = 0; i < sample_num; ++i) {
         gyro.read();
-        if( (int)gyro.G.y-dc_offset > noise)
-            noise = ((int)gyro.G.y - dc_offset);
-        else if( (int)gyro.G.y-dc_offset < -noise)
-            noise = -((int)gyro.G.y - dc_offset);
+        if( (int)pitch_rate-dc_offset > noise)
+            noise = ((int)pitch_rate - dc_offset);
+        else if( (int)pitch_rate-dc_offset < -noise)
+            noise = -((int)pitch_rate - dc_offset);
     }
         
     //Display setup info
@@ -86,7 +92,7 @@ void loop() {
     if (millis() - now > sample_time) {
         now = millis();
         gyro.read();
-        rate = (int)(gyro.G.y-dc_offset);
+        rate = (int)(pitch_rate-dc_offset);
         
 		/*
 		TODO I could measure the actual time_step for a better integration
