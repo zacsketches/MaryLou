@@ -1,14 +1,9 @@
+/*
+    Script to test if the motors encoders are connected correctly.
+*/
+
 #include <MaryLou.h>
-
 #include <quadrature.h>
-
-
-//Data structures
-#include <Vector.h>
-#include <Pair.h>
-
-//Glow Worm core
-#include <clearinghouse.h>
 
 /*
 	Because the attachInterrupt(int, function_ptr, const) requires
@@ -48,11 +43,6 @@
     in the sketch to read the encoder.
 */
 
-/*------------Required to initialize GW framework------------------------*/
-gw::Clearinghouse ch;
-int gw::Message::msg_count = 0;
-int gw::Node::node_count = 0;
-
 Quadrature_encoder<RT_ENCODER_A_PIN, RT_ENCODER_B_PIN> rt_encoder(Board::due);
 Quadrature_encoder<RT_ENCODER_A_PIN, RT_ENCODER_B_PIN>* rt_ptr = &rt_encoder;
 
@@ -63,24 +53,31 @@ void setup() {
   Serial.begin(115200);
   Serial.println();
 
-  lt_ptr->reverse();  
+//    rt_encoder.begin();
   rt_ptr->begin();
   lt_ptr->begin();
 }
 
 void loop() {
   //read the encoder
-  long rt_ct = rt_ptr->count();
-  long lt_ct = lt_ptr->count();
+//  long rt_ct = rt_encoder.count();
+    long rt_ct = rt_ptr->count();
+    long lt_ct = lt_ptr->count();
   
   //format the output for printing 
   char buf[50];
   sprintf(buf, "rt count is: %d\tlt count is:%d", rt_ct, lt_ct);
   Serial.println(buf);
+
+  //format the output for printing 
+//  char buf[50];
+//  sprintf(buf, "rt count is: %d", rt_ct);
+//  Serial.println(buf);
+
   
   //check the motion
-  Motion::motion m = rt_encoder.motion();
-  Serial.println(text(m));
+//  Motion::motion m = rt_encoder.motion();
+//  Serial.println(text(m));
 
   //delay the loop for a moment.
   //Note that the encoder continues to count even during this

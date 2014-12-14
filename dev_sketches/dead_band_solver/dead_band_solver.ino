@@ -23,9 +23,9 @@
     control effort message. 
 */
 
-int step_size = 50;
+int step_size = 10;
 const int step_delay = 1500;
-const int starting_effort = 0;
+const int starting_effort = 30;
 const int loops = 5;
 
 //Data structures
@@ -132,10 +132,11 @@ gw::Motor* rt_motor =
   new gw::Motor("rt_mtr", RT_DIR_PIN, RT_PWM_PIN, RT_SENSE_PIN, Position::rt);  
 
 //Quadrature_encoder<int_A_pin, int_B_pin>(Position::position)
-Quadrature_encoder<LT_ENCODER_A_PIN,LT_ENCODER_B_PIN>* lt_encoder = 
-  new Quadrature_encoder<LT_ENCODER_A_PIN,LT_ENCODER_B_PIN>(Position::lt,"lt_enc");
-Quadrature_encoder<RT_ENCODER_A_PIN,RT_ENCODER_B_PIN>* rt_encoder = 
-  new Quadrature_encoder<RT_ENCODER_A_PIN,RT_ENCODER_B_PIN>(Position::rt,"rt_enc");
+Quadrature_encoder<RT_ENCODER_A_PIN, RT_ENCODER_B_PIN> rt_encoder(Position::rt, "rt_enc");
+Quadrature_encoder<RT_ENCODER_A_PIN, RT_ENCODER_B_PIN>* rt_ptr = &rt_encoder;
+
+Quadrature_encoder<LT_ENCODER_A_PIN, LT_ENCODER_B_PIN> lt_encoder(Position::lt, "lt_enc");
+Quadrature_encoder<LT_ENCODER_A_PIN, LT_ENCODER_B_PIN>* lt_ptr = &lt_encoder;
 
 //Blance_plant()
 Balance_plant plant;
@@ -147,18 +148,23 @@ Velocity_computer computer;
 void setup() {
     Serial.begin(115200);
     Serial.println();
+    
+    Serial.println("Initiating test.  Ensure 12V power is connected and");
+    Serial.println("motors are switched on.  3 sec delay starting.");
+    //A small delay while the user sets up to observe the test data
+    delay(3000);
 
-    LOG("test of log macro");
+//    LOG("test of log macro");
 
     ch.register_msg(&control_effort_msg);
 
-    ch.list();
+//    ch.list();
 
     //initialize the balance plant
-    rt_motor->reverse();        //right motor is installed opposite left
-  //  lt_encoder->reverse();      //left motor encoder installed opposite
-    plant.attach(lt_encoder);
-    plant.attach(rt_encoder);
+    rt_motor->reverse();        
+    lt_motor->reverse();        
+    plant.attach(lt_ptr);
+    plant.attach(rt_ptr);
     plant.attach(lt_motor);
     plant.attach(rt_motor);
     plant.begin();
@@ -169,9 +175,20 @@ void setup() {
     //cases it may be a small int close to zero.
     control_effort_msg.u = 0;
     plant.run();
+    delay(3000);
     
-
+    control_effort_msg.u = 150;
+    plant.run();
+    Serial.println("--------------------------------------------------------------");
+    Serial.println("Both motors should be running forward!");
+    Serial.println("If they aren't then reconfigure in the setup BEFORE continuing");
+    Serial.println("--------------------------------------------------------------");
+    delay(5000);
+    Serial.println("Motors stopped for two seconds before test begins");
+    control_effort_msg.u = 0;
+    plant.run();
     delay(2000);
+        
 }
 
 /*------------Loop------------------------------------------------------*/
