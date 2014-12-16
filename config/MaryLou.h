@@ -37,4 +37,14 @@
 #define LT_FWD_DEAD 46
 #define LT_BCK_DEAD -66
 
+// Conversion factors used moved from radians to degrees and vice versa.
+#define RAD_TO_DEG 57.2958  		// 180 / pi
+#define DEG_TO_RAD .0174533 		// pi / 180
+
+// Bias constants in the accelerometer and gyro
+#define THETA_BIAS -0.43329    //FROM EXPERIMENTAL DATA WITH ACCEL_TEST.INO
+#define DC_OFFSET -223         //From experimental data with gyro_test.ino
+#define PITCH_AXIS x    //Which axis are the Euler angles measured around.  Changes dependent
+#define ROLL_AXIS  y    //upon the physical installation of the MEMS sensor on the bot.
+#define YAW_AXIS   z
 #endif

@@ -10,7 +10,7 @@
 #include <clearinghouse.h>
 
 //Physical connections for MaryLou
-#include<MaryLou.h>
+#include <MaryLou.h>
 
 //Glow Worm messages
 #include <messages/plant_status.h>
@@ -26,7 +26,7 @@
 
 //Supporting libraries
 #include <Wire.h>
-#include <quadrature.h>
+#include <tools/quadrature.h>
 #include <L3G.h>
 #include <LSM303.h>
 
@@ -47,19 +47,23 @@ Pitch_msg pitch_msg;
 State_vec_msg state_vec_msg;
 
 /*------------Construct the system components----------------------------*/
+/*-----Motors-----*/
 //Motor(name, dir_pin, pwm_pin, current_sense_pin, Position::position)
 gw::Motor* lt_motor = 
   new gw::Motor("lt_mtr", lt_dir_pin, lt_pwm_pin, lt_sense_pin, Position::lt);  
 gw::Motor* rt_motor = 
   new gw::Motor("rt_mtr", rt_dir_pin, rt_pwm_pin, rt_sense_pin, Position::rt);  
-//Quadrature_encoder<int_A_pin, int_B_pin>(Position::position)
-Quadrature_encoder<lt_encoder_A_pin,lt_encoder_B_pin>* lt_encoder = 
-  new Quadrature_encoder<lt_encoder_A_pin,lt_encoder_B_pin>(Position::lt,"lt_enc");
-Quadrature_encoder<rt_encoder_A_pin,rt_encoder_B_pin>* rt_encoder = 
-  new Quadrature_encoder<rt_encoder_A_pin,rt_encoder_B_pin>(Position::rt,"rt_enc");
-//Blance_plant()
-Balance_plant plant;
 
+/*-----Encoders-----*/
+//Quadrature_encoder<int_A_pin, int_B_pin>(Position::position)
+Quadrature_encoder<RT_ENCODER_A_PIN, RT_ENCODER_B_PIN> rt_encoder(Position::rt, "rt_enc");
+Quadrature_encoder<RT_ENCODER_A_PIN, RT_ENCODER_B_PIN>* rt_ptr = &rt_encoder;
+Quadrature_encoder<LT_ENCODER_A_PIN, LT_ENCODER_B_PIN> lt_encoder(Position::lt, "lt_enc");
+Quadrature_encoder<LT_ENCODER_A_PIN, LT_ENCODER_B_PIN>* lt_ptr = &lt_encoder;
+
+/*-----Blocks-----*/
+//Balance_plant()
+Balance_plant plant;
 //todo...change this so the gyro and accel are attached...not required by the
 //constructor.  This will alow more flexibility in attaching other kinds of gyros
 //and/or accelerometers.
@@ -93,18 +97,18 @@ void setup() {
   
   ch.list();
 
-  //initialize the balance plant
-  rt_motor->reverse();        //right motor is installed opposite left
-//  lt_encoder->reverse();      //left motor encoder installed opposite
-  plant.attach(lt_encoder);
-  plant.attach(rt_encoder);
-  plant.attach(lt_motor);
-  plant.attach(rt_motor);
-  plant.begin();
-  plant.print();
+    //initialize the balance plant
+    rt_motor->reverse();        
+    lt_motor->reverse();        
+    plant.attach(lt_ptr);
+    plant.attach(rt_ptr);
+    plant.attach(lt_motor);
+    plant.attach(rt_motor);
+    plant.begin();
+    plant.print();
   
   //create a static control effort msg for debugging
-  control_effort_msg.u = 20;
+  control_effort_msg.u = 50;
   
   //initialize the attitude computer
   computer.begin();
