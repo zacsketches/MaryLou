@@ -122,3 +122,8 @@ computing the Mass Moment of Inertia by suspending it from the ceiling.
 	https://www.youtube.com/watch?v=m9iHEanmNWc
 	https://www.youtube.com/watch?v=tfrzMczTv8g
 	https://www.youtube.com/watch?v=4lcVQzdK_vE
+
+19. I found a good resource on committing just a single file or group of files from
+one branch into another.  I've included it here so I can find it again later.
+	http://jasonrudolph.com/blog/2009/02/25/git-tip-how-to-merge-specific-files-from-another-branch/
+	
