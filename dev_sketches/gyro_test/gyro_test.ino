@@ -83,6 +83,7 @@ void setup() {
         
     //Display setup info
     print_config();
+    Serial.println("Beginnning 5 sec delay."
     delay(5000);
 }
 
