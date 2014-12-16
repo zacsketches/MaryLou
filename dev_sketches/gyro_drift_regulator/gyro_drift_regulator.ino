@@ -51,8 +51,13 @@
 #define GYRO_COUNTS_TO_DEG .00875   // see above
 #define DEG_TO_GYRO_COUNTS 114.2857	// 1 / .00875
 
-#define THETA_BIAS -0.43329    //FROM EXPERIMENTAL DATA WITH ACCEL_TEST.INO
-#define DC_OFFSET -223         //From experimental data with gyro_test.ino
+//provide default constants if there is no included robot config file.
+#ifndef THETA_BIAS
+    #define THETA_BIAS -0.43329    //FROM EXPERIMENTAL DATA WITH ACCEL_TEST.INO
+#endif
+#ifndef DC_OFFSET
+    #define DC_OFFSET -223         //From experimental data with gyro_test.ino
+#endif  
 
 
 typedef unsigned long Time;
